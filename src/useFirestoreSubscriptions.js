@@ -4,7 +4,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 const activeListeners = new Map();
 const data = reactive({ loading: true });
 
-function buildQuery(collectionName, whereConditions) {
+function buildQuery(db, collectionName, whereConditions) {
   if (!Array.isArray(whereConditions) || whereConditions.length === 0) {
     return [query(collection(db, collectionName))];
   }
@@ -15,12 +15,12 @@ function buildQuery(collectionName, whereConditions) {
   });
 }
 
-function subscribeToCollection(collectionName, whereConditions = []) {
+function subscribeToCollection(db, collectionName, whereConditions = []) {
   if (activeListeners.has(collectionName)) {
     activeListeners.get(collectionName)();
   }
 
-  const firestoreQueries = buildQuery(collectionName, whereConditions);
+  const firestoreQueries = buildQuery(db, collectionName, whereConditions);
   let combinedData = [];
   const unsubscribeList = [];
 
@@ -61,12 +61,13 @@ function unsubscribeAll() {
 }
 
 /**
- * Hook for managing Firestore subscriptions dynamically.
+ * 🔥 Hook for managing Firestore subscriptions dynamically.
+ * @param {Object} db - Firestore instance (user-provided)
  * @param {Object} user - The logged-in Firebase user.
  * @param {Object} collections - An object where keys are Firestore collections, and values are filter conditions.
  */
-export function useFirestoreSubscriptions(user, collections = {}) {
-  if (!user) return { data };
+export function useFirestoreSubscriptions(db, user, collections = {}) {
+  if (!db || !user) return { data };
 
   watch(user, (newUser) => {
     unsubscribeAll();
@@ -79,7 +80,7 @@ export function useFirestoreSubscriptions(user, collections = {}) {
           cond.map((c) => (c.includes("{userId}") ? [c[0], c[1], newUser.uid] : c))
         );
 
-        subscribeToCollection(collectionName, processedWhere);
+        subscribeToCollection(db, collectionName, processedWhere);
       });
     }
   }, { immediate: true });
