@@ -1,0 +1,25 @@
+{
+  "name": "vue-firestore-subscriber",
+  "version": "1.0.0",
+  "description": "A simple Vue composable to manage Firestore subscriptions dynamically.",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eirikmadland/vue-firestore-subscriber.git"
+  },
+  "keywords": [
+    "vue",
+    "firebase",
+    "firestore",
+    "subscriptions",
+    "realtime"
+  ],
+  "author": "Eirik Madland",
+  "license": "MIT",
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "firebase": ">=9.0.0 <11.0.0"
+  }
+}
