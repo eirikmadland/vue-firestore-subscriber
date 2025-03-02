@@ -1,6 +1,6 @@
 {
   "name": "vue-firestore-subscriber",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple Vue composable to manage Firestore subscriptions dynamically.",
   "main": "src/index.js",
   "module": "src/index.js",
