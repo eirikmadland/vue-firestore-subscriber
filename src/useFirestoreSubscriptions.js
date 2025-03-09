@@ -21,19 +21,17 @@ function subscribeToCollection(db, collectionName, whereConditions = []) {
   }
 
   const firestoreQueries = buildQuery(db, collectionName, whereConditions);
-  let combinedData = [];
   const unsubscribeList = [];
 
   firestoreQueries.forEach((firestoreQuery) => {
     const unsubscribe = onSnapshot(firestoreQuery, (snapshot) => {
-      snapshot.docs.forEach((doc) => {
-        const docData = { id: doc.id, ...doc.data() };
-        if (!combinedData.some((item) => item.id === docData.id)) {
-          combinedData.push(docData);
-        }
-      });
+      const updatedData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      data[collectionName] = combinedData;
+      // 🔥 Update `data` reactively
+      data[collectionName] = updatedData;
       data.loading = false;
     });
 
