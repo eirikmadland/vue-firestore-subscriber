@@ -1,6 +1,6 @@
 // vue-firestore-subscriber/index.js
 
-import { reactive, readonly, watchEffect } from 'vue';
+import { reactive, readonly, watchEffect, computed } from 'vue';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
@@ -12,6 +12,7 @@ import {
 // Shared state
 const state = reactive({
   loading: true,
+  error: null,
 });
 
 let _db = null;
@@ -46,16 +47,24 @@ function subscribeToCollection(collectionName, whereConditions, uid) {
   const unsubscribeList = [];
 
   firestoreQueries.forEach((firestoreQuery) => {
-    const unsubscribe = onSnapshot(firestoreQuery, (snapshot) => {
-      snapshot.docs.forEach((doc) => {
-        const docData = { id: doc.id, ...doc.data() };
-        if (!combinedData.some((item) => item.id === docData.id)) {
-          combinedData.push(docData);
-        }
-      });
-      state[collectionName] = combinedData;
-      state.loading = false;
-    });
+    const unsubscribe = onSnapshot(
+      firestoreQuery,
+      (snapshot) => {
+        snapshot.docs.forEach((doc) => {
+          const docData = { id: doc.id, ...doc.data() };
+          if (!combinedData.some((item) => item.id === docData.id)) {
+            combinedData.push(docData);
+          }
+        });
+        state[collectionName] = combinedData;
+        state.loading = false;
+      },
+      (error) => {
+        console.error(`[Firestore error] ${collectionName}:`, error);
+        state.error = `Failed to load ${collectionName}: ${error.message}`;
+        state.loading = false;
+      }
+    );
 
     unsubscribeList.push(unsubscribe);
   });
@@ -70,10 +79,11 @@ function unsubscribeAll() {
   _activeListeners.clear();
 
   Object.keys(state).forEach((key) => {
-    if (key !== 'loading') delete state[key];
+    if (key !== 'loading' && key !== 'error') delete state[key];
   });
 
   state.loading = true;
+  state.error = null;
 }
 
 export function initFirestoreSubscriber(db, collections) {
@@ -98,6 +108,6 @@ export function initFirestoreSubscriber(db, collections) {
 export function useFirestoreData() {
   return {
     data: readonly(state),
-    loading: readonly(state).loading,
+    error: computed(() => state.error),
   };
 }
