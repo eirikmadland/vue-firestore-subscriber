@@ -1,4 +1,4 @@
-import { reactive, watch } from "vue";
+import { reactive, watch, nextTick } from "vue";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 const activeListeners = new Map();
@@ -21,17 +21,19 @@ function subscribeToCollection(db, collectionName, whereConditions = []) {
   }
 
   const firestoreQueries = buildQuery(db, collectionName, whereConditions);
+  let combinedData = [];
   const unsubscribeList = [];
 
   firestoreQueries.forEach((firestoreQuery) => {
     const unsubscribe = onSnapshot(firestoreQuery, (snapshot) => {
-      const updatedData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      snapshot.docs.forEach((doc) => {
+        const docData = { id: doc.id, ...doc.data() };
+        if (!combinedData.some((item) => item.id === docData.id)) {
+          combinedData.push(docData);
+        }
+      });
 
-      // 🔥 Update `data` reactively
-      data[collectionName] = updatedData;
+      data[collectionName] = combinedData;
       data.loading = false;
     });
 
@@ -67,21 +69,23 @@ function unsubscribeAll() {
 export function useFirestoreSubscriptions(db, user, collections = {}) {
   if (!db || !user) return { data };
 
-  watch(user, (newUser) => {
-    unsubscribeAll();
+  nextTick(() => {
+    watch(user, (newUser) => {
+      unsubscribeAll();
 
-    if (newUser) {
-      Object.entries(collections).forEach(([collectionName, whereConditions]) => {
-        if (!Array.isArray(whereConditions)) return;
+      if (newUser) {
+        Object.entries(collections).forEach(([collectionName, whereConditions]) => {
+          if (!Array.isArray(whereConditions)) return;
 
-        const processedWhere = whereConditions.map((cond) =>
-          cond.map((c) => (c.includes("{userId}") ? [c[0], c[1], newUser.uid] : c))
-        );
+          const processedWhere = whereConditions.map((cond) =>
+            cond.map((c) => (c.includes("{userId}") ? [c[0], c[1], newUser.uid] : c))
+          );
 
-        subscribeToCollection(db, collectionName, processedWhere);
-      });
-    }
-  }, { immediate: true });
+          subscribeToCollection(db, collectionName, processedWhere);
+        });
+      }
+    }, { immediate: true });
+  });
 
   return { data };
 }
