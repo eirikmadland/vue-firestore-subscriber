@@ -45,15 +45,25 @@ function subscribeToCollection(collectionName, whereConditions, uid) {
   const firestoreQueries = buildQuery(_db, collectionName, whereConditions, uid);
   const unsubscribeList = [];
 
-  firestoreQueries.forEach((firestoreQuery) => {
+  const queryResults = new Map();
+  
+  firestoreQueries.forEach((firestoreQuery, index) => {
     const unsubscribe = onSnapshot(
       firestoreQuery,
       (snapshot) => {
-        const updatedData = snapshot.docs.map((doc) => ({
+        const docs = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        state[collectionName] = updatedData;
+        queryResults.set(index, docs);
+  
+        const merged = Array.from(queryResults.values()).flat();
+        const unique = merged.reduce((acc, curr) => {
+          if (!acc.find(item => item.id === curr.id)) acc.push(curr);
+          return acc;
+        }, []);
+  
+        state[collectionName] = unique;
         state.loading = false;
       },
       (error) => {
@@ -62,7 +72,7 @@ function subscribeToCollection(collectionName, whereConditions, uid) {
         state.loading = false;
       }
     );
-
+  
     unsubscribeList.push(unsubscribe);
   });
 
