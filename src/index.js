@@ -86,6 +86,12 @@ function unsubscribeAll() {
 export function initFirestoreSubscriber(db, collections) {
   _db = db;
   _collections = collections;
+  
+  Object.keys(collections).forEach((collectionName) => {
+    if (!(collectionName in state)) {
+      state[collectionName] = [];
+    }
+  });
 
   const auth = getAuth();
 
