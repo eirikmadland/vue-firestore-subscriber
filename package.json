@@ -1,6 +1,6 @@
 {
   "name": "vue-firestore-subscriber",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Centralized Firestore subscriptions for Vue 3 with automatic Firebase auth integration.",
   "main": "src/index.js",
   "module": "src/index.js",
